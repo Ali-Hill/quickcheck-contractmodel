@@ -5,7 +5,7 @@ import Cardano.Api
 import Cardano.Api.Byron
 import Cardano.Api.Shelley
 import Cardano.Ledger.Alonzo.Tx qualified as Ledger (Data)
-import Cardano.Ledger.Alonzo.TxWits qualified as Ledger
+import Cardano.Ledger.Alonzo.TxWitness qualified as Ledger
 import Cardano.Ledger.SafeHash qualified as Ledger
 
 import Cardano.Ledger.Alonzo.Scripts qualified as Ledger
@@ -118,12 +118,12 @@ prettyHash = text . take 7 . drop 1 . show
 prettyDatum :: Datum -> Doc
 prettyDatum TxOutDatumNone         = empty
 prettyDatum (TxOutDatumHash _ h)   = "Datum#" <> prettyHash h
-prettyDatum (TxOutDatumInline _ d) = prettyScriptData $ getScriptData d
-prettyDatum (TxOutDatumInTx _ d)   = prettyScriptData $ getScriptData d
+prettyDatum (TxOutDatumInline _ d) = prettyScriptData d
+prettyDatum (TxOutDatumInTx _ d)   = prettyScriptData d
 
 prettyTx :: Tx Era -> Doc
 prettyTx tx@(Tx body@(TxBody (TxBodyContent{..})) _) =
-  block "Tx" [ "Valid:" <+> prettyValidity (txValidityLowerBound, txValidityUpperBound)
+  block "Tx" [ "Valid:" <+> prettyValidity txValidityRange
              , fblock "Inputs:" $ map prettyIn inps
              , block "Outputs:" [ int i <:> prettyTxOutTx out
                                 | (i, out) <- zip [0..] txOuts ]
@@ -143,7 +143,7 @@ prettyTx tx@(Tx body@(TxBody (TxBodyContent{..})) _) =
               TxBodyNoScriptData                            -> mempty
 
 prettyRedeemer :: [TxIn] -> [PolicyId] -> Ledger.RdmrPtr -> (Ledger.Data era, Ledger.ExUnits) -> Doc
-prettyRedeemer inps mints (Ledger.RdmrPtr tag ix) (dat, _) = pTag <:> prettyScriptData (getScriptData $ fromAlonzoData dat)
+prettyRedeemer inps mints (Ledger.RdmrPtr tag ix) (dat, _) = pTag <:> prettyScriptData (fromAlonzoData dat)
   where
     pTag =
       case tag of
@@ -156,7 +156,7 @@ prettyDatumMap (TxBodyScriptData _ (Ledger.TxDats dats) _)
   | not $ null dats =
     block "Datums:"
       [ prettyHash (Ledger.extractHash key) <:>
-          prettyScriptData (getScriptData $ fromAlonzoData val)
+          prettyScriptData (fromAlonzoData val)
       | (key, val) <- Map.toList dats
       ]
 prettyDatumMap _ = empty
@@ -166,6 +166,7 @@ prettyMinting TxMintNone            = empty
 prettyMinting (TxMintValue _ val _) = block "Minting:" [prettyValue val]
 
 prettyValidity :: (TxValidityLowerBound Era, TxValidityUpperBound Era) -> Doc
+prettyValidity (TxValidityNoLowerBound, TxValidityNoUpperBound{}) = "any"
 prettyValidity (lo, hi) = prettyLowerBound lo <+> "-" <+> prettyUpperBound hi
 
 prettyLowerBound :: TxValidityLowerBound Era -> Doc
@@ -173,14 +174,14 @@ prettyLowerBound TxValidityNoLowerBound        = "-∞"
 prettyLowerBound (TxValidityLowerBound _ slot) = text (show $ unSlotNo slot)
 
 prettyUpperBound :: TxValidityUpperBound Era -> Doc
-prettyUpperBound (TxValidityUpperBound _ Nothing)     = "∞"
-prettyUpperBound (TxValidityUpperBound _ (Just slot)) = text (show $ unSlotNo slot)
+prettyUpperBound TxValidityNoUpperBound{}      = "∞"
+prettyUpperBound (TxValidityUpperBound _ slot) = text (show $ unSlotNo slot)
 
 prettyTxModifier :: TxModifier -> Doc
 prettyTxModifier (TxModifier txmod) = vcat [prettyMod mod | mod <- txmod]
   where
     prettyPlutusScript = prettyHash . hashScript . PlutusScript PlutusScriptV2
-    prettySimpleScript = prettyHash . hashScript . SimpleScript
+    prettySimpleScript = prettyHash . hashScript . SimpleScript SimpleScriptV2
 
     maybeBlock _ _ _ Nothing   = empty
     maybeBlock tag hd pr (Just d) = hang tag 2 $ fsep [hd, pr d]

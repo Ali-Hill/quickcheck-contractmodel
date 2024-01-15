@@ -136,8 +136,8 @@ import Test.QuickCheck.ThreatModel.TxModifier
 data ThreatModelEnv = ThreatModelEnv
   { currentTx    :: Tx Era
   , currentUTxOs :: UTxO Era
-  , pparams      :: LedgerProtocolParameters Era
-  }
+  , pparams      :: ProtocolParameters
+  } deriving Show
 
 -- | The threat model monad is how you construct threat models. It works in the context of a given
 --   transaction and the UTxO set at the point where the transaction was validated (see
@@ -231,7 +231,7 @@ runThreatModel = go False
 
 -- | Evaluate a `ThreatModel` on a list of transactions.
 assertThreatModel :: ThreatModel a
-                  -> LedgerProtocolParameters Era
+                  -> ProtocolParameters
                   -> [(Tx Era, UTxO Era)]
                   -> Property
 assertThreatModel m params txs = runThreatModel m envs

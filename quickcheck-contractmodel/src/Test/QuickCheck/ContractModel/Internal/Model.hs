@@ -25,7 +25,6 @@ module Test.QuickCheck.ContractModel.Internal.Model
   ) where
 
 import Control.Lens
-import Control.Monad (when)
 import Control.Monad.Reader
 import Control.Monad.Writer as Writer
 import Control.Monad.State as State
@@ -361,12 +360,11 @@ instance ContractModel s => Arbitrary (Actions s) where
   arbitrary = fromStateModelActions <$> arbitrary
   shrink = map fromStateModelActions . shrink . toStateModelActions
 
-toStateModelActions :: forall state. ContractModel state =>
+toStateModelActions :: ContractModel state =>
                         Actions state -> StateModel.Actions (ModelState state)
 toStateModelActions (Actions_ rs (Smart k s)) =
   StateModel.Actions_ rs (Smart k $ map mkStep s)
-    where mkStep :: Act state -> StateModel.Step (ModelState state)
-          mkStep (ActWaitUntil v n)     = v         StateModel.:= StateModel.ActionWithPolarity (WaitUntil n) StateModel.PosPolarity
+    where mkStep (ActWaitUntil v n)     = v         StateModel.:= StateModel.ActionWithPolarity (WaitUntil n) StateModel.PosPolarity
           mkStep (ActObservation v n p) = v         StateModel.:= StateModel.ActionWithPolarity (Observation n p) StateModel.PosPolarity
           mkStep act                    = varOf act StateModel.:= StateModel.ActionWithPolarity (ContractAction (isBind act) (actionOf act)) (polarityOf act)
 

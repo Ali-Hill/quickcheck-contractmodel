@@ -37,7 +37,6 @@ import Cardano.Api.Shelley
 
 import Test.QuickCheck.ContractModel.Internal
 import Test.QuickCheck.ContractModel.Internal.ChainIndex
-import Test.QuickCheck.ContractModel.Internal.Common
 
 import Test.QuickCheck
 
@@ -47,7 +46,7 @@ import Test.QuickCheck.ThreatModel qualified as TM
 -- | Evaluate a `ThreatModel` on the result of running a t`Test.QuickCheck.ContractModel.ContractModel` test (see
 --   `runContractModel`). Checks the threat model on all transactions produced by the test.
 assertThreatModel :: ThreatModel a
-                  -> LedgerProtocolParameters Era
+                  -> ProtocolParameters
                   -> ContractModelResult state
                   -> Property
 assertThreatModel m params result = TM.assertThreatModel m params envs

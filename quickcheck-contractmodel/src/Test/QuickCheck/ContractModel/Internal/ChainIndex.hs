@@ -44,13 +44,13 @@ class HasChainIndex m where
   getChainState :: m ChainState
 
 allMinAda :: ChainIndex
-          -> LedgerProtocolParameters Era
+          -> ProtocolParameters
           -> [Lovelace]
-allMinAda ci (LedgerProtocolParameters params) =
-  [ l
+allMinAda ci params =
+  [ selectLovelace v
   | TxInState{..} <- transactions ci
   , txOut <- getTxOuts tx
-  , l <- [calculateMinimumUTxO era txOut params]
+  , Right v <- [calculateMinimumUTxO era txOut params]
   , accepted
   ]
 
@@ -59,7 +59,7 @@ type FeeCalculation = NetworkId -> TxInState -> Map (AddressInEra Era) Value
 signerPaysFees :: FeeCalculation
 signerPaysFees nid TxInState{tx = tx, accepted = accepted}
   | not accepted = error "TODO: signerPaysFees rejected tx"
-  | Tx (TxBody (txFee -> TxFeeExplicit _ lov)) [wit] <- tx = Map.singleton (shelleyAddressInEra shelleyBasedEra $ mkAddrFromWitness nid wit) (lovelaceToValue lov)
+  | Tx (TxBody (txFee -> TxFeeExplicit _ lov)) [wit] <- tx = Map.singleton (shelleyAddressInEra $ mkAddrFromWitness nid wit) (lovelaceToValue lov)
   | otherwise = mempty
 
 -- TODO: is this really safe?? also - why is this so complicated??

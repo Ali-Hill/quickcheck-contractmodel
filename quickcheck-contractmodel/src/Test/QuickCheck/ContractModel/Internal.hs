@@ -7,12 +7,11 @@ import Control.Lens
 import Control.Monad.Reader
 import Control.Monad.Writer
 import Control.Monad.State
-import Control.Monad.Except
+import Control.Monad.Error
 
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
 import Test.QuickCheck.StateModel qualified as StateModel
-import Test.QuickCheck.StateModel ()
 import Test.QuickCheck.ContractModel.Internal.Symbolics
 import Test.QuickCheck.ContractModel.Internal.Spec
 import Test.QuickCheck.ContractModel.Internal.ChainIndex
@@ -109,8 +108,8 @@ instance (Monad m, HasChainIndex m) => HasChainIndex (RunMonad m) where
   getChainState = lift getChainState
 
 instance (Monad m, HasChainIndex m) => HasChainIndex (StateModel.PostconditionM m) where
-  getChainIndex = StateModel.PostconditionM (lift getChainIndex)
-  getChainState = StateModel.PostconditionM (lift getChainState)
+  getChainIndex = lift getChainIndex
+  getChainState = lift getChainState
 
 instance IsRunnable m => IsRunnable (RunMonad m) where
   awaitSlot = lift . awaitSlot
@@ -190,7 +189,7 @@ runContractModel as = do
 data BalanceChangeOptions = BalanceChangeOptions
   { observeScriptValue   :: Bool
   , feeCalucation        :: FeeCalculation
-  , protocolParameters   :: LedgerProtocolParameters Era
+  , protocolParameters   :: ProtocolParameters
   , addressPrettyPrinter :: AddressInEra Era -> String
   }
 
